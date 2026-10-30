@@ -17,7 +17,7 @@ public class Prato {
     private Double avaliacao;
     private Integer serve;
     private String ingredientes;
-    private boolean lenha;
+
 
 
     public Prato() {
@@ -33,7 +33,7 @@ public class Prato {
         this.avaliacao = avaliacao;
         this.serve = serve;
         this.ingredientes = ingredientes;
-        this.lenha = lenha;
+
     }
 
 
@@ -45,7 +45,6 @@ public class Prato {
         this.avaliacao = avaliacao;
         this.serve = serve;
         this.ingredientes = ingredientes;
-        this.lenha = lenha;
     }
 
 
@@ -113,12 +112,6 @@ public class Prato {
         this.ingredientes = ingredientes;
     }
 
-    public boolean isLenha() {
-        return lenha;
-    }
 
-    public void setLenha(boolean lenha) {
-        this.lenha = lenha;
-    }
 }
 

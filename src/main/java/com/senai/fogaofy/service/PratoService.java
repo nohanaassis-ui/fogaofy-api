@@ -29,7 +29,6 @@ public class PratoService {
         prato.setAvaliacao(prato.getAvaliacao());
         prato.setCategoria(prato.getCategoria());
         prato.setDescricao(prato.getDescricao());
-        prato.setLenha(prato.isLenha());
         prato.setIngredientes(prato.getIngredientes());
         prato.setServe(prato.getServe());
         pratoRepository.save(prato);
