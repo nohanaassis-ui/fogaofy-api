@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FogãoFy - Cardápio da Cozinha Mineira</title>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+tailwind.config={darkMode:'class',theme:{extend:{colors:{fogao:{gold:'#c9801a',gold2:'#f0b04a',wine:'#4a1a14',ink:'#3b1a12',black:'#fffaf2',dark:'#ffffff',card:'#ffffff',cardHover:'#fff3dc',border:'#ecd9b8',subtext:'#7a6350'}}}}};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sacramento&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.development.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+<style>
+.script{font-family:'Sacramento',cursive}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:#fffaf2;color:#3b1a12}
+.hero{background:linear-gradient(135deg,#5b1f17 0%,#8a3a1e 100%)}
+.modal{background:rgba(255,253,248,.98);border:1px solid #ecd9b8;box-shadow:0 25px 60px rgba(74,26,20,.35)}
+.flame{animation:fl 1.6s ease-in-out infinite alternate;transform-origin:50% 100%}
+@keyframes fl{0%{transform:scale(1) rotate(-2deg)}100%{transform:scale(1.08,1.14) rotate(2deg)}}
+</style>
+</head>
+<body class="bg-fogao-black text-fogao-ink min-h-screen">
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useMemo}=React;
+const ic=(d,s=20,w=2)=><svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={w} strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+const Icons={
+  Flame:({size=24})=><svg className="flame" width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3.5-1.5 5-3 7.2C7.6 11.200 7 12.400 7 14a5 5 0 0 0 10 0c0-1.900-.8-3.200-1.800-4.400-.4 1.100-1 1.800-1.700 2.200C14.200 8.700 13.600 4.800 12 2Z"/></svg>,
+  Home:({size=20})=>ic("m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z",size),
+  Plus:({size=18})=>ic("M12 5v14M5 12h14",size,2.5),
+  Search:({size=18})=>ic("M21 21l-4.300-4.300M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z",size),
+  Edit:({size=16})=>ic("m15 5 4 4M4 20l4-.8L20 7a2.800 2.800 0 0 0-4-4L4 15z",size),
+  Trash:({size=16})=>ic("M3 6h18M8 6V4h8v2m3 0-1 14H6L5 6m4 4v6m6-6v6",size),
+  Clock:({size=14})=>ic("M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0z",size)
+};
+const CATS=[['PRATO_PRINCIPAL','Pratos principais','🍲'],['ACOMPANHAMENTO','Acompanhamentos','🍚'],['PETISCO','Petiscos','🧀'],['MARMITA','Marmitas','🥡'],['SOBREMESA','Doces de tacho','🍮'],['BEBIDA','Bebidas','☕']];
+const catInfo=v=>CATS.find(c=>c[0]===v)||['','Outros','🍽️'];
+const NOME_RESTAURANTE='Fogão Mineiro';
+const HERO_FOTO=''; // cole aqui o link de uma foto de comida mineira para usar de fundo
+const EMPTY={nome:'',categoria:'PRATO_PRINCIPAL',preco:'',serve:'',ingredientes:'',descricao:'',disponivel:true,lenha:false};
+const brl=n=>n==null||n===''?'—':Number(n).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+
+let DB=[
+{id:1,nome:'Feijão tropeiro com torresmo',categoria:'PRATO_PRINCIPAL',preco:34.9,serve:2,ingredientes:'Feijão, farinha, couve, linguiça, ovo, torresmo',descricao:'Receita da casa, mexido na panela de ferro.',disponivel:true,lenha:true},
+{id:2,nome:'Frango com quiabo',categoria:'PRATO_PRINCIPAL',preco:29.9,serve:2,ingredientes:'Frango caipira, quiabo, alho, cebola',descricao:'Clássico de domingo, com angu de acompanhamento.',disponivel:true,lenha:true},
+{id:3,nome:'Pão de queijo na chapa',categoria:'PETISCO',preco:14.9,serve:2,ingredientes:'Polvilho, queijo canastra, leite',descricao:'Quentinho, saindo do forno a cada 20 minutos.',disponivel:true,lenha:false},
+{id:4,nome:'Marmita da roça',categoria:'MARMITA',preco:24.9,serve:1,ingredientes:'Arroz, feijão, couve, farofa, bife acebolado',descricao:'Pratos do dia embalados para viagem.',disponivel:false,lenha:false},
+{id:5,nome:'Doce de leite no tacho',categoria:'SOBREMESA',preco:12.5,serve:1,ingredientes:'Leite, açúcar, baunilha',descricao:'Cozido por horas, com queijo minas por cima.',disponivel:true,lenha:true},
+{id:6,nome:'Café coado na hora',categoria:'BEBIDA',preco:6.0,serve:1,ingredientes:'Café de Minas, açúcar mascavo',descricao:'Coado no pano, do jeito de antigamente.',disponivel:true,lenha:true}
+];let nid=7;
+function App(){
+  const [tela,setTela]=useState('principal');
+  const [apiUrl,setApiUrl]=useState('demo');
+  const [urlEdit,setUrlEdit]=useState(apiUrl);
+  const [showConfig,setShowConfig]=useState(false);
+  const [statusApi,setStatusApi]=useState('carregando');
+  const [erroDetalhe,setErroDetalhe]=useState('');
+  const [pratos,setPratos]=useState([]);
+  const [busca,setBusca]=useState('');
+  const [filtro,setFiltro]=useState('TODOS');
+  const [form,setForm]=useState(EMPTY);
+  const [editando,setEditando]=useState(null);
+  const [deletando,setDeletando]=useState(null);
+  const [toast,setToast]=useState(null);
+  const [carregando,setCarregando]=useState(false);
+  const avisar=(mensagem,tipo='info')=>{setToast({mensagem,tipo});setTimeout(()=>setToast(null),3800)};
+  const request=async(path='',options={})=>{
+    if(apiUrl==='demo'){await new Promise(r=>setTimeout(r,250));const m=options.method||'GET',id=path.slice(1),b=options.body?JSON.parse(options.body):null;
+      if(m==='POST'){DB.push({...b,id:nid++});return null}
+      if(m==='PUT'){DB=DB.map(p=>String(p.id)===id?{...b,id:p.id}:p);return null}
+      if(m==='DELETE'){DB=DB.filter(p=>String(p.id)!==id);return null}
+      return [...DB]}
+    const res=await fetch(`${apiUrl.replace(/\/$/,'')}${path}`,options);
+    if(!res.ok)throw new Error(`A API respondeu com status ${res.status}`);
+    if(res.status===204)return null;
+    const t=await res.text();return t?JSON.parse(t):null;
+  };
+  const carregar=async()=>{
+    setCarregando(true);setErroDetalhe('');
+    try{const d=await request();setPratos(Array.isArray(d)?d:(d?[d]:[]));setStatusApi('conectado')}
+    catch(e){setStatusApi('erro');setErroDetalhe(e.message||'Não foi possível conectar à API.')}
+    finally{setCarregando(false)}
+  };
+  useEffect(()=>{carregar()},[apiUrl]);
+  const novo=()=>{setForm(EMPTY);setEditando(null);setTela('cadastro')};
+  const voltar=()=>{setTela('principal');setEditando(null);setForm(EMPTY)};
+  const salvar=async(e)=>{
+    e.preventDefault();
+    const dados={...form,preco:form.preco===''?null:Number(form.preco),serve:form.serve===''?null:Number(form.serve)};
+    const h={'Content-Type':'application/json'};
+    try{
+      if(editando!==null){await request('/'+editando,{method:'PUT',headers:h,body:JSON.stringify(dados)});avisar('Prato atualizado pela API!','sucesso')}
+      else{await request('',{method:'POST',headers:h,body:JSON.stringify(dados)});avisar('Prato adicionado ao cardápio!','sucesso')}
+      voltar();await carregar();
+    }catch(err){avisar(`Não foi possível salvar. ${err.message}`,'erro')}
+  };
+  const editar=(p)=>{
+    setForm({nome:p.nome||'',categoria:p.categoria||'PRATO_PRINCIPAL',preco:p.preco??'',serve:p.serve??'',ingredientes:p.ingredientes||'',descricao:p.descricao||'',disponivel:p.disponivel!==false,lenha:!!p.lenha});
+    setEditando(p.id);setTela('cadastro');
+  };
+  const excluir=async(id)=>{
+    try{await request('/'+id,{method:'DELETE'});avisar('Prato removido do cardápio!','sucesso');setDeletando(null);await carregar()}
+    catch(err){avisar(`Não foi possível excluir. ${err.message}`,'erro')}
+  };
+  const filtrados=useMemo(()=>pratos.filter(p=>{
+    const t=[p.nome,p.ingredientes,p.descricao].filter(Boolean).join(' ').toLowerCase();
+    return t.includes(busca.toLowerCase())&&(filtro==='TODOS'||p.categoria===filtro);
+  }),[pratos,busca,filtro]);
+  const ativos=pratos.filter(p=>p.disponivel!==false).length;
+  const medio=pratos.length?pratos.reduce((s,p)=>s+(Number(p.preco)||0),0)/pratos.length:0;
+  const field='w-full bg-white border border-fogao-border rounded-lg p-3 text-sm text-fogao-ink focus:outline-none focus:border-fogao-gold transition';
+  const label='block text-fogao-subtext font-bold mb-1.5 uppercase tracking-wider text-[10px]';
+  const cfg=()=>{setUrlEdit(apiUrl);setShowConfig(true)};
+
+  return <div className="flex min-h-screen bg-fogao-black text-fogao-ink">
+    {toast&&<div className={`fixed top-5 right-5 z-[70] px-4 py-3 rounded-xl text-xs font-semibold shadow-2xl border bg-white ${toast.tipo==='sucesso'?'text-fogao-gold border-fogao-gold':toast.tipo==='erro'?'text-rose-600 border-rose-300':'text-fogao-ink border-fogao-border'}`}>{toast.mensagem}</div>}
+
+    <aside className="w-64 bg-fogao-wine text-white p-5 hidden md:flex flex-col justify-between">
+      <div className="space-y-8">
+        <div className="flex items-center gap-3 px-2"><span className="text-fogao-gold2"><Icons.Flame size={30}/></span><span className="text-2xl font-extrabold">fogão<span className="text-fogao-gold2">Fy</span></span></div>
+        <nav className="space-y-2">
+          <button onClick={voltar} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold ${tela==='principal'?'bg-white/15 text-fogao-gold2':'text-white/70 hover:text-white'}`}><Icons.Home/> Cardápio</button>
+          <button onClick={novo} className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-sm font-bold ${tela==='cadastro'?'bg-white/15 text-fogao-gold2':'text-white/70 hover:text-white'}`}><Icons.Plus/> Novo prato</button>
+        </nav>
+      </div>
+      <div className="bg-white/10 p-3 rounded-xl border border-white/15">
+        <span className="text-white/60 block text-[10px] uppercase font-bold mb-1">API Backend</span>
+        <div className="text-[11px] font-mono break-all mb-3">{apiUrl}</div>
+        <div className="flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-xs"><span className={`w-2 h-2 rounded-full ${statusApi==='conectado'?'bg-emerald-400':statusApi==='carregando'?'bg-amber-300':'bg-rose-500'}`}></span>{statusApi==='conectado'?'Conectada':statusApi==='carregando'?'Conectando':'Erro de conexão'}</span><button onClick={cfg} className="text-xs text-fogao-gold2 hover:underline">Alterar</button></div>
+      </div>
+    </aside>
+
+    <main className="flex-1 min-w-0">
+      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-fogao-border px-5 md:px-8 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3 md:hidden"><span className="text-fogao-gold"><Icons.Flame size={26}/></span><b className="text-xl">fogão<span className="text-fogao-gold">Fy</span></b></div>
+        <div className="hidden md:block text-xs text-fogao-subtext">COZINHA MINEIRA / <span className="text-fogao-ink">{tela==='cadastro'?'NOVO PRATO':'CARDÁPIO'}</span></div>
+        <div className="flex gap-2">
+          <button onClick={carregar} className="px-3 py-2 rounded-full border border-fogao-border text-xs font-bold hover:bg-fogao-card">{carregando?'Atualizando...':'↻ Atualizar'}</button>
+          <button onClick={novo} className="flex items-center gap-2 px-4 py-2 rounded-full bg-fogao-gold text-white text-xs font-extrabold hover:opacity-90"><Icons.Plus/> Novo prato</button>
+        </div>
+      </header>
+
+      <div className="p-5 md:p-8 max-w-7xl mx-auto">
+      {tela==='principal'?<>
+        <section className="relative overflow-hidden rounded-2xl mb-7 text-white text-center" style={HERO_FOTO?{background:`linear-gradient(rgba(60,16,10,.78),rgba(60,16,10,.84)),url(${HERO_FOTO}) center/cover`}:{background:'radial-gradient(circle at 15% 25%,#a8431f 0,transparent 42%),radial-gradient(circle at 85% 30%,#7a1f16 0,transparent 45%),radial-gradient(circle at 60% 90%,#c9801a 0,transparent 40%),linear-gradient(160deg,#4a1a14,#2e0f0b)'}}>
+          <div className="absolute inset-0 opacity-20 text-[7rem] md:text-[10rem] flex justify-between items-center px-6 select-none pointer-events-none"><span>🍲</span><span className="hidden sm:block">🌶️</span><span>🍚</span></div>
+          <div className="relative px-5 pt-10 md:pt-14 pb-24 md:pb-28">
+            <h1 className="script text-6xl sm:text-7xl md:text-8xl leading-none">{NOME_RESTAURANTE}</h1>
+            <div className="mt-8 mx-auto max-w-3xl border-y border-white/60 py-4"><p className="text-xs md:text-sm font-extrabold tracking-[.55em] pl-[.55em]">CULINÁRIA MINEIRA</p></div>
+            <p className="text-white/80 text-sm mt-5 max-w-lg mx-auto">Gerencie o cardápio da casa em um só lugar: do feijão tropeiro ao doce de leite no tacho, direto na sua API.</p>
+          </div>
+          <div className="absolute left-0 right-0 bottom-0">
+            <div className="flex justify-center gap-3 relative z-10 -mb-5">
+              {[<path key="i" d="M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 5a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm5.500-1.500h.01"/>,<path key="f" d="M14 8h3V4h-3a4 4 0 0 0-4 4v2H7v4h3v7h4v-7h3l1-4h-4V8z"/>].map((p,i)=><span key={i} className="w-11 h-11 rounded-full bg-fogao-gold flex items-center justify-center shadow-lg border-2 border-white/30"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{p}</svg></span>)}
+            </div>
+            <svg viewBox="0 0 1440 80" preserveAspectRatio="none" className="block w-full h-14 md:h-20"><path fill="#fffaf2" d="M0 50C180 20 330 66 560 48S980 12 1180 40s190 18 260 4V80H0z"/></svg>
+          </div>
+        </section>
+
+        {statusApi==='erro'&&<div className="mb-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm"><b className="text-rose-700">Não foi possível conectar à API.</b><p className="text-fogao-subtext mt-1">{erroDetalhe}</p><p className="text-fogao-subtext mt-1">Confira a URL, se o backend está em execução e se o CORS está configurado.</p><button onClick={cfg} className="mt-3 text-fogao-gold font-bold hover:underline">Configurar endpoint</button></div>}
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-7">
+          {[['Pratos no cardápio',pratos.length],['Disponíveis hoje',ativos],['Preço médio',brl(medio)]].map(([l,v])=><div key={l} className="bg-fogao-card border border-fogao-border rounded-xl p-5"><p className="text-fogao-subtext text-xs font-bold uppercase">{l}</p><p className="text-3xl font-extrabold mt-2">{v}</p></div>)}
+        </div>
+
+        <div className="flex flex-wrap gap-2 mb-5">
+          {[['TODOS','Tudo','✨'],...CATS].map(([v,l,e])=><button key={v} onClick={()=>setFiltro(v)} className={`px-4 py-2 rounded-full text-xs font-bold border transition ${filtro===v?'bg-fogao-gold text-white border-fogao-gold':'border-fogao-border text-fogao-subtext hover:text-fogao-ink hover:bg-fogao-card'}`}>{e} {l}</button>)}
+        </div>
+
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between mb-5">
+          <div><h2 className="text-xl font-extrabold">Pratos cadastrados</h2><p className="text-fogao-subtext text-xs mt-1">Registros retornados pela API REST</p></div>
+          <div className="flex items-center gap-2 bg-fogao-dark border border-fogao-border rounded-full px-4"><Icons.Search/><input value={busca} onChange={e=>setBusca(e.target.value)} placeholder="Buscar prato, ingrediente..." className="bg-transparent py-2.5 text-sm outline-none w-full sm:w-64"/></div>
+        </div>
+
+        {carregando&&pratos.length===0?<div className="text-center py-16 text-fogao-subtext">Carregando cardápio da API...</div>
+        :filtrados.length===0?<div className="bg-fogao-card border border-fogao-border rounded-2xl p-12 text-center"><div className="text-fogao-gold flex justify-center mb-4"><Icons.Flame size={42}/></div><h3 className="font-extrabold text-lg">{statusApi==='erro'?'Não foi possível carregar o cardápio':'Nenhum prato encontrado'}</h3><p className="text-fogao-subtext text-sm mt-2">{statusApi==='erro'?'Verifique a conexão com o backend.':'Cadastre o primeiro prato ou altere os filtros.'}</p><button onClick={novo} className="mt-5 inline-flex items-center gap-2 rounded-full bg-fogao-gold text-white px-5 py-3 font-extrabold text-sm"><Icons.Plus/> Novo prato</button></div>
+        :<div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">{filtrados.map((p,i)=>{const [,cl,em]=catInfo(p.categoria);const off=p.disponivel===false;return <article key={p.id??i} className={`bg-fogao-card border border-fogao-border rounded-2xl p-5 hover:bg-fogao-cardHover transition ${off?'opacity-60':''}`}>
+          <div className="flex justify-between items-start gap-3"><div className="flex gap-3 min-w-0"><div className="w-12 h-12 shrink-0 rounded-xl bg-fogao-gold/10 flex items-center justify-center text-2xl">{em}</div><div className="min-w-0"><h3 className="font-extrabold text-lg truncate">{p.nome||'Sem nome'}</h3><p className="text-fogao-subtext text-xs mt-1">{cl} {p.lenha?'· 🔥 Fogão a lenha':''}</p></div></div><span className="text-[10px] font-bold bg-fogao-cardHover text-fogao-gold px-2 py-1 rounded-full">#{p.id??'—'}</span></div>
+          <div className="grid grid-cols-2 gap-3 mt-5 text-xs">
+            <div className="bg-fogao-cardHover rounded-lg p-3"><p className="text-fogao-subtext mb-1">Preço</p><b className="text-fogao-gold text-sm">{brl(p.preco)}</b></div>
+            <div className="bg-fogao-cardHover rounded-lg p-3"><p className="text-fogao-subtext mb-1">Serve</p><b className="flex items-center gap-1"><Icons.Clock/>{p.serve?p.serve+(p.serve>1?' pessoas':' pessoa'):'—'}</b></div>
+          </div>
+          <div className="mt-3"><span className={`text-[10px] font-bold px-2 py-1 rounded-full ${off?'bg-rose-100 text-rose-700':'bg-emerald-100 text-emerald-700'}`}>{off?'Esgotado':'Disponível'}</span></div>
+          {p.ingredientes&&<p className="text-xs text-fogao-subtext mt-3 line-clamp-2"><b className="text-fogao-ink">Leva: </b>{p.ingredientes}</p>}
+          {p.descricao&&<p className="text-xs text-fogao-subtext mt-2 line-clamp-2">{p.descricao}</p>}
+          <div className="flex gap-2 mt-5 pt-4 border-t border-fogao-border"><button onClick={()=>editar(p)} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-fogao-border py-2.5 text-xs font-bold hover:bg-fogao-cardHover"><Icons.Edit/> Editar</button><button onClick={()=>setDeletando(p.id)} className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-rose-200 text-rose-600 py-2.5 text-xs font-bold hover:bg-rose-50"><Icons.Trash/> Excluir</button></div>
+        </article>})}</div>}
+        <p className="text-[10px] text-fogao-subtext mt-6">Endpoint configurado: <code>{apiUrl}</code> · GET, POST, PUT e DELETE</p>
+      </>:
+      <section className="max-w-3xl mx-auto">
+        <button onClick={voltar} className="text-fogao-subtext hover:text-fogao-ink text-sm mb-5">← Voltar para o cardápio</button>
+        <div className="bg-fogao-card border border-fogao-border rounded-2xl overflow-hidden">
+          <div className="hero text-white p-6 md:p-8 border-b border-fogao-border"><p className="text-fogao-gold text-xs font-extrabold uppercase tracking-[.2em] mb-2">Ficha do prato</p><h1 className="text-2xl md:text-3xl font-extrabold">{editando!==null?'Editar prato':'Cadastrar novo prato'}</h1><p className="text-white/75 text-sm mt-2">Preencha as informações e salve diretamente na API.</p></div>
+          <form onSubmit={salvar} className="p-6 md:p-8 space-y-5">
+            <div><label className={label}>Nome do prato *</label><input required value={form.nome} onChange={e=>setForm({...form,nome:e.target.value})} placeholder="Ex.: Feijão tropeiro com torresmo" className={field}/></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label className={label}>Categoria *</label><select required value={form.categoria} onChange={e=>setForm({...form,categoria:e.target.value})} className={field}>{CATS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select></div>
+              <div><label className={label}>Preço (R$) *</label><input required type="number" min="0" step="0.01" value={form.preco} onChange={e=>setForm({...form,preco:e.target.value})} placeholder="Ex.: 32.90" className={field}/></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div><label className={label}>Serve quantas pessoas?</label><input type="number" min="0" value={form.serve} onChange={e=>setForm({...form,serve:e.target.value})} placeholder="Ex.: 2" className={field}/></div>
+              <div><label className={label}>Ingredientes</label><input value={form.ingredientes} onChange={e=>setForm({...form,ingredientes:e.target.value})} placeholder="Feijão, farinha, couve, linguiça..." className={field}/></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <label className="flex items-center gap-3 bg-white border border-fogao-border rounded-lg px-4 py-3 cursor-pointer"><input type="checkbox" checked={form.disponivel} onChange={e=>setForm({...form,disponivel:e.target.checked})} className="w-4 h-4 accent-fogao-gold"/><span><b className="block text-sm">Disponível hoje</b><small className="text-fogao-subtext">Desmarque se esgotou</small></span></label>
+              <label className="flex items-center gap-3 bg-white border border-fogao-border rounded-lg px-4 py-3 cursor-pointer"><input type="checkbox" checked={form.lenha} onChange={e=>setForm({...form,lenha:e.target.checked})} className="w-4 h-4 accent-fogao-gold"/><span><b className="block text-sm">Feito no fogão a lenha 🔥</b><small className="text-fogao-subtext">Mostra o selo da casa</small></span></label>
+            </div>
+            <div><label className={label}>Descrição</label><textarea rows="3" value={form.descricao} onChange={e=>setForm({...form,descricao:e.target.value})} placeholder="Receita da vovó, ponto de cozimento, tempero..." className={field}></textarea></div>
+            <div className="flex flex-col-reverse sm:flex-row gap-3 pt-2"><button type="button" onClick={voltar} className="flex-1 py-3 rounded-full border border-fogao-border font-bold text-sm hover:bg-fogao-cardHover">Cancelar</button><button type="submit" className="flex-1 py-3 rounded-full bg-fogao-gold hover:opacity-90 text-white font-extrabold text-sm">{editando!==null?'Salvar alterações (PUT)':'Cadastrar prato (POST)'}</button></div>
+          </form>
+        </div>
+      </section>}
+      </div>
+    </main>
+
+    {showConfig&&<div className="fixed inset-0 z-50 bg-fogao-wine/70 backdrop-blur-sm flex items-center justify-center p-4"><div className="modal max-w-lg w-full p-6 rounded-2xl space-y-5"><div className="flex justify-between items-center"><h3 className="font-extrabold">Configurar URL do Backend</h3><button onClick={()=>setShowConfig(false)} className="text-fogao-subtext text-xl">×</button></div><p className="text-fogao-subtext text-sm">Informe a rota base da API de pratos. O front-end fará chamadas GET, POST, PUT e DELETE nesse endpoint.</p><div><label className={label}>URL base da API</label><input value={urlEdit} onChange={e=>setUrlEdit(e.target.value)} placeholder="http://localhost:8080/api/pratos" className={field}/></div><div className="flex gap-3"><button onClick={()=>setShowConfig(false)} className="flex-1 py-3 rounded-full border border-fogao-border font-bold text-sm">Cancelar</button><button onClick={()=>{setApiUrl(urlEdit.trim());setShowConfig(false)}} className="flex-1 py-3 rounded-full bg-fogao-gold text-white font-extrabold text-sm">Salvar</button></div></div></div>}
+    {deletando!==null&&<div className="fixed inset-0 z-50 bg-fogao-wine/70 backdrop-blur-sm flex items-center justify-center p-4"><div className="modal max-w-sm w-full p-6 rounded-2xl text-center space-y-5"><div className="mx-auto w-12 h-12 rounded-full bg-rose-100 text-rose-700 flex items-center justify-center"><Icons.Trash size={22}/></div><h3 className="font-extrabold text-lg">Excluir este prato?</h3><p className="text-fogao-subtext text-sm">A exclusão enviará <code className="text-rose-700">DELETE {apiUrl}/{deletando}</code> para sua API.</p><div className="flex gap-3"><button onClick={()=>setDeletando(null)} className="flex-1 py-3 rounded-full bg-fogao-cardHover font-bold text-sm">Cancelar</button><button onClick={()=>excluir(deletando)} className="flex-1 py-3 rounded-full bg-rose-600 text-white font-extrabold text-sm">Excluir</button></div></div></div>}
+  </div>;
+}
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
