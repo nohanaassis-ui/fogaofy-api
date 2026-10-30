@@ -32,6 +32,7 @@ public class PratoService {
         prato.setLenha(prato.isLenha());
         prato.setIngredientes(prato.getIngredientes());
         prato.setServe(prato.getServe());
+        pratoRepository.save(prato);
     }
 
 
